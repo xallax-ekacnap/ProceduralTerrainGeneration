@@ -43,10 +43,25 @@ class Generator:
         return ((world + 1) * 128).astype(np.uint8)
 
     def assign_colors(self, layers, noise_array, sea_level):
-        altitudes = (layers[:, 2] + sea_level).astype(int)
-        colors = np.array([np.array([*color], dtype=np.uint8) for color in layers[:, 1]])
-        color_indices = np.digitize(noise_array, altitudes)
-        color_array = np.array([colors[ind] for ind in color_indices])
+        altitudes = (layers['value'] + sea_level).astype(int)
+        colors = [color for color in layers['color']]
+        color_array = np.empty((noise_array.shape[0], noise_array.shape[1], 3), dtype=np.uint8)
+
+        for i in range(noise_array.shape[0]):
+            for j in range(noise_array.shape[1]):
+                altitude = int(noise_array[i, j])
+                color = None
+
+                for k in range(len(altitudes)):
+                    if altitude < altitudes[k]:
+                        color = colors[k]
+                        break
+
+                if color is None:
+                    color = colors[-1]
+
+                color_array[i, j] = color
+
         return color_array
 
     def noise_array_to_image(self,noise_world):
@@ -176,19 +191,41 @@ stg = {
 }
 
 # name, color, altitude
-layers = np.array([
-    ["blue1", (22, 156, 233), -10],
-    ["blue2", (45, 166, 235), -5],
-    ["blue3", (68, 176, 238), 0],
-    ["beach", (244, 218, 138), 3],
-    ["green0", (181, 202, 116), 6],
-    ["green1", (116, 186, 94), 25],
-    ["green2", (80, 143, 61), 35],
-    ["green3", (50, 89, 38), 42],
-    ["grey1", (58, 29, 19), 46],
-    ["grey2", (92, 61, 61), 52],
-    ["snow", (245, 240, 240), 255]
-])
+# layers = np.array([
+#     ["blue1", (22, 156, 233), -10],
+#     ["blue2", (45, 166, 235), -5],
+#     ["blue3", (68, 176, 238), 0],
+#     ["beach", (244, 218, 138), 3],
+#     ["green0", (181, 202, 116), 6],
+#     ["green1", (116, 186, 94), 25],
+#     ["green2", (80, 143, 61), 35],
+#     ["green3", (50, 89, 38), 42],
+#     ["grey1", (58, 29, 19), 46],
+#     ["grey2", (92, 61, 61), 52],
+#     ["snow", (245, 240, 240), 255]
+# ])
+
+# Create the structured array
+# Create the structured array
+dtype = [('name', '<U10'), ('color', '3int'), ('value', 'int')]
+
+# Define the data
+data = [
+    ("blue1", (22, 156, 233), -10),
+    ("blue2", (45, 166, 235), -5),
+    ("blue3", (68, 176, 238), 0),
+    ("beach", (244, 218, 138), 3),
+    ("green0", (181, 202, 116), 6),
+    ("green1", (116, 186, 94), 25),
+    ("green2", (80, 143, 61), 35),
+    ("green3", (50, 89, 38), 42),
+    ("grey1", (58, 29, 19), 46),
+    ("grey2", (92, 61, 61), 52),
+    ("snow", (245, 240, 240), 255)
+]
+
+# Create the structured NumPy array
+layers = np.array(data, dtype=dtype)
 
 root = Tk()
 app = App(root, stg, layers)
